@@ -64,7 +64,16 @@ subroutine last_fixed_point_iter(iter,n_iter,norm,cutoff,last_iter)
 end subroutine
 
 
-
+! fixed-point iteration control:
+! ctrl = F for primal or tangent (Forward) iterations
+! ctrl = R for adjoint (Reverse) iterations
+! id indicates which system of equations is being converged; mesh deformation or flow eqn
+! iter is the iteration count going from 1 to n_iter in Forward mode and from n_iter to 1 in Reverse mode
+! k_iter is how frequently to print the iteration details
+! fp_exit is a flag to tell the iteration loop when to break
+! cutoff is the minimum tolerance of the global norm
+! norm is the residual 1-norm from dx,dy,dz, and u,v,w,p
+! norm_gl is the global maximum normalized norm
 subroutine fp_iter_ctrl(ctrl,id,iter,n_iter,k_iter,fp_exit,cutoff,norm,norm_gl)
   use const_m
   use pde_data_m, only: last_fp_iter
