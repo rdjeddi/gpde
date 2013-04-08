@@ -156,13 +156,6 @@ subroutine gradient(msh,geom,phi,grad,n_iter,neu_bnd)
     return
   end if
 
-
-  if(n_iter==1)then
-    call gradient_o1(msh,geom,phi,grad,neu_bnd)
-    return
-  end if
-
-
   n_cmp=size(phi,1)
   if(n_cmp>size(grad,2))stop "error calling gradient()"
 
@@ -238,75 +231,6 @@ end subroutine
 
 
 
-
-!==============================================================================!
-subroutine gradient_o1(msh,geom,phi,grad,neu_bnd)
-!------------------------------------------------------------------------------!
-  use vector_utils_m
-  use mesh_data_m
-  use geom_data_m
-!------------------------------------------------------------------------------!
-  type(msh_t),intent(in)::msh
-  type(geom_t),intent(in)::geom
-  real(rp),dimension(:,:),intent(inout)::phi
-  real(rp),dimension(:,:,:),intent(inout)::grad
-  logical,intent(in)::neu_bnd
-!------------------------------------------------------------------------------!
-  real(rp)::w_fp1,w_fn1
-  real(rp),dimension(size(phi,1))::fphi,vphi,nphi
-  real(rp),dimension(msh%n_dx)::dx,vdx,ndx,norm1,vec
-  real(rp),dimension(msh%n_dx,size(phi,1))::fgrad
-  integer::i,j,k,ib,ic,iter,n_cmp
-!------------------------------------------------------------------------------!
-
-  if(neu_bnd)then
-    do k=1,msh%n_bfce
-      i=msh%fce_elm(k)%lst(1)
-      ib=abs(msh%fce_elm(k)%lst(2))
-
-      vdx=geom%x_fc(:,k)-geom%x_vc(:,i)
-      do ic=1,n_cmp
-	phi(ic,ib)=phi(ic,i)
-      end do
-    end do
-  end if
-
-  grad=0.d0
-
-  do k=1,msh%n_fce
-    i=msh%fce_elm(k)%lst(1)
-    j=msh%fce_elm(k)%lst(2)
-    norm1=geom%norm(:,k)
-
-    select case(j)
-    case(1:)
-      w_fp1=geom%w_fp(k)
-      w_fn1=1.d0-w_fp1
-
-      fphi=w_fp1*phi(:,j)+w_fn1*phi(:,i)
-
-      vec=geom%area(k)*norm1*geom%volr(i)
-      do ic=1,n_cmp
-	grad(:,ic,i)=grad(:,ic,i)+vec*fphi(ic)
-      end do
-
-      vec=geom%area(k)*norm1*geom%volr(j)
-      do ic=1,n_cmp
-	grad(:,ic,j)=grad(:,ic,j)-vec*fphi(ic)
-      end do
-
-    case default
-      ib=abs(j)
-      vec=geom%area(k)*norm1*geom%volr(i)
-      do ic=1,n_cmp
-	grad(:,ic,i)=grad(:,ic,i)+vec*phi(ic,ib)
-      end do
-    end select
-  end do
-end subroutine
-
-
-
 !==============================================================================!
 subroutine test_gradient(msh,geom,pwr)
 !------------------------------------------------------------------------------!
@@ -342,23 +266,6 @@ subroutine test_gradient(msh,geom,pwr)
   print "(1x,a)","gradient error:"
   do k=0,3
     call gradient(msh,geom,phi,grad,k,.false.)
-
-!     summ=0
-!     do i=1,msh%n_elm
-!       err=0
-!       do ix=1,msh%n_dx
-!         grad_exact=pwr*geom%x_vc(ix,i)**(pwr-1)
-!         err=err+abs((grad_exact-grad(ix,ix,i)) &
-!           /(grad_exact+small))
-!       end do
-!       err=err/msh%n_dx
-!       summ=summ+err
-!     end do
-!     summ=summ/msh%n_elm
-!
-!     print "(1x,a,i4,a,3es16.6)","  for", &
-!       k," iterations,    error =",summ
-
     summ = one - sum (grad)/(msh%n_elm * msh%n_dx)
     print "(a,1x,g16.6)","GG("//trim(itoa(k))//") gradient error:",summ
   end do

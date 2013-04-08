@@ -112,16 +112,16 @@ subroutine gpde_main(fl1, meshfile, fl2, mshffile, fl3, casedir)
 
   call ls_grad_matrix(msh,geom)
   call test_gradient(msh,geom,1)
-  geom%n_gd=0
+  geom%n_gd=1
 
 
   ! Re = (cc / cd) * U_{ref} * L_{ref}
   call alloc(cc, i=msh%n_ebf); cc=1
-  call alloc(cd, i=msh%n_ebf); cd=one/200;
+  call alloc(cd, i=msh%n_ebf); cd=one/1000;
 
 
   ! distance to nearest wall equation
-  dwall%id=5; dwall%run=1
+  dwall%id=5; dwall%run=0
   dwall%n_cmp=1; dwall%k_iter=1
   dwall%reduc=1.d-5; dwall%n_iter=10
   dwall%lls=2; dwall%rls=1.d-5; dwall%nls=25
@@ -135,7 +135,7 @@ subroutine gpde_main(fl1, meshfile, fl2, mshffile, fl3, casedir)
 
 
   ! mesh deflection equation
-  delx%id=1; delx%run=1
+  delx%id=1; delx%run=0
   delx%n_cmp=msh%n_dx; delx%k_iter=1
   delx%reduc=1.d-5; delx%n_iter=10
   delx%lls=2; delx%rls=1.d-1; delx%nls=25
@@ -148,9 +148,9 @@ subroutine gpde_main(fl1, meshfile, fl2, mshffile, fl3, casedir)
   ! momentum equation
   vel%id=2;
   vel%n_cmp=msh%n_dx; vel%k_iter=1
-  vel%reduc=1.d-4; vel%n_iter=20
-  vel%lls=2; vel%rls=1.d-1; vel%nls=25
-  vel%urf=0.4; vel%cbl=0.5; vel%dbl=1
+  vel%reduc=1.d-4; vel%n_iter=50
+  vel%lls=2; vel%rls=1.d-1; vel%nls=5
+  vel%urf=0.55; vel%cbl=0.; vel%dbl=1
   vel%lc_sch=1
   call alloc(vel%ref,  i=vel%n_cmp)
   call alloc(vel%phi,  i=vel%n_cmp,j=msh%n_ebf)
@@ -162,7 +162,7 @@ subroutine gpde_main(fl1, meshfile, fl2, mshffile, fl3, casedir)
   ! pressure correction equation
   pp%id=3; pp%run=1
   pp%n_cmp=1; pp%lspd=0
-  pp%lls=1; pp%rls=1.d-2; pp%nls=25
+  pp%lls=1; pp%rls=1.d-1; pp%nls=10
   call alloc(pp%phi,  i=pp%n_cmp,j=msh%n_ebf)
   call alloc(pp%grad, i=msh%n_dx,j=pp%n_cmp,k=msh%n_elm)
   call alloc(pp%rhs,  i=pp%n_cmp,j=msh%n_elm)
@@ -187,9 +187,9 @@ subroutine gpde_main(fl1, meshfile, fl2, mshffile, fl3, casedir)
 
 
   ! objective function
-  bnd%qnty="pressure loss"; bnd%id=0
+!   bnd%qnty="pressure loss"; bnd%id=0
 !   bnd%qnty="power loss"; bnd%id=0
-!   bnd%qnty="wall force"; bnd%id=31
+  bnd%qnty="wall force"; bnd%id=31
 !   bnd%qnty="flow uniformity"; bnd%id=21
 
 
@@ -205,13 +205,13 @@ subroutine gpde_main(fl1, meshfile, fl2, mshffile, fl3, casedir)
 
     ! wall boundary conditions
     if(ph_ty==31)then
-!       vel%phi(1,ib)=1.00
+      vel%phi(1,ib)=1.00
     end if
 
     ! inlet boundary conditions
     if(ph_ty==11)then
 !       vel%phi(1,ib)=1.00
-      vel%phi(:,ib)=-geom%norm(:,k) * 1.00
+!       vel%phi(:,ib)=-geom%norm(:,k) * 1.00
     end if
 
     select case(ph_ty)
@@ -229,8 +229,8 @@ subroutine gpde_main(fl1, meshfile, fl2, mshffile, fl3, casedir)
     end select
   end do
 
-!   print *, "USING MOVING WALL BOUNDARY CONDITION"
-  print *, "USING INLET BOUNDARY CONDITION"
+  print *, "USING MOVING WALL BOUNDARY CONDITION"
+!   print *, "USING INLET BOUNDARY CONDITION"
 
 
   spd(2) = (-1) * spd(1) * (area(1) / area(2))
